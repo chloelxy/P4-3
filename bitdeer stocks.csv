@@ -1,6 +1,6 @@
 
 Date,Open,High,Low,Close ,Adj Close ,Volume
-,,,,Close price adjusted for splits.,Adjusted close price adjusted for splits and dividend and/or capital gain distributions.,
+
 12-Sep-25,14.26,16.18,14.05,16.15,16.15,"9,423,500"
 11-Sep-25,13.87,14.36,13.53,14.11,14.11,"4,698,900"
 10-Sep-25,14.09,14.22,13.61,13.64,13.64,"4,577,300"
@@ -1191,4 +1191,5 @@ Date,Open,High,Low,Close ,Adj Close ,Volume
 ,,,,,,
 ,,,,,,
 ,,,,,,
+
 
