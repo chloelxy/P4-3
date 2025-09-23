@@ -38,8 +38,8 @@ def load_csv(path: Path) -> pd.DataFrame:
     return df
             
     #sort according to asc order 
-    # df = df.sort_values("Date").drop_duplicates(subset=["Date"])
-    # df = df.set_index("Date")
+    df = df.sort_values("Date").drop_duplicates(subset=["Date"])
+    df = df.set_index("Date")
     
     # print(df.head(10))
     # print(df.tail(10))
