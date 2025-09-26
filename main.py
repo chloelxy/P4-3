@@ -3,6 +3,7 @@ import pandas as pd
 from data import dataset  
 from streak import movement_direction, run_summary
 import indicator
+from MaxProfitCalculator import fetch_prices_for_algo, max_profit_with_days
 
 PERIOD = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "MAX": "max"}
 
@@ -21,11 +22,51 @@ def main():
     
     #input ticker and period
     while True:
-        ticker = input("Enter stock ticker (e.g. AAPL, TSLA): ").strip().upper()
-        if ticker:
-            break
-        print("Invalid Ticker. Try again.")
-        
+        try:
+            ticker = input("Enter stock ticker (e.g., AAPL): ").upper().strip() #Asks for stock symbol (like AAPL for Apple) Converts to uppercase (AAPL instead of aapl) strip is spacing
+            if ticker.lower() in ['quit', 'exit']: #Checks if user wants to quit at any point
+                print("Goodbye!")
+                break
+
+            start = input("Enter start date (YYYY-MM-DD): ").strip() #Gets the date range for analysis
+            if start.lower() in ['quit', 'exit']:
+                print("Goodbye!")
+                break
+
+            end = input("Enter end date (YYYY-MM-DD): ").strip() #Gets the date range for analysis
+            if end.lower() in ['quit', 'exit']:
+                print("Goodbye!")
+                break
+
+            # Basic validation
+            if not ticker or not start or not end:
+                print("❌ All fields are required. Please try again.\n") #Makes sure user entered something for all three fields
+                continue
+
+            # Fetch prices and run analysis
+            prices, dates, df = fetch_prices_for_algo(ticker, start, end) #Calls the previous function to get stock prices
+            profit, transactions = max_profit_with_days(prices) #Runs trading algorithm to find best buy/sell opportunities
+
+            # Display results
+            print(f"\nTotal profit: ${profit:.2f}") #Shows total profit possible
+            if transactions:
+                print("Transactions:")
+                for b, s, bp, sp in transactions:
+                    print(f"Buy {dates[b].date()} @ ${bp:.2f}, Sell {dates[s].date()} @ ${sp:.2f}, Profit ${sp - bp:.2f}") #Lists each trade: Buy date/price, Sell date/price, Profit made
+            else:
+                print("No profitable transactions found.")
+
+            # Ask if user wants to analyze another stock
+            another = input("\nAnalyze another stock? (y/n): ").lower().strip()
+            if another not in ['y', 'yes']:
+                print("Goodbye!")
+                break
+            print()
+
+        except Exception as e: #Catches any errors (wrong dates, invalid stock symbol, etc.) # Shows friendly error message instead of crashing
+            print(f"❌ Error: {e}") #Program continues running so user can try again
+            print("Please try again or type 'quit' to exit.\n")
+
     while True:
         period_input = input("Enter period (1M, 3M, 6M, 1Y, 2Y, 5Y, MAX): ").strip().upper()
         if period_input in PERIOD:
