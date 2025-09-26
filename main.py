@@ -132,7 +132,6 @@ def max_profit_with_days(prices):
     # Loop through the prices list
     while i < n - 1: #The loop never reaches i = 5, so you won’t accidentally do prices[6] (which doesn’t exist).index is till 5
 
-
         # Find local minima (buy day)
         while i < n - 1 and prices[i + 1] <= prices[i]: #As long as the next day’s price is lower or equal to today’s price, keep moving forward we are skipping days where the stock is flat or going down
             i += 1 #Move the index forward by 1 day.
@@ -156,7 +155,6 @@ def max_profit_with_days(prices):
         profit += sell_price - buy_price
 
         i += 1 # Move to next day after selling
-
     return profit, transactions
 # --------- CORE FUNCTIONS END ---------
 
@@ -187,8 +185,8 @@ if base_df is None or base_df.empty or "Close" not in base_df.columns: #checks i
     st.error("No usable price data returned.")                         #stops the web interface
     st.stop()
 
-# Tabs
-tab1, tab2, tab3= st.tabs(["Close vs SMA", "Candlestick + Streak shading", "Max profit (Buy/Sell)"]) #tabs on web interface
+# Tabs for web interface
+tab1, tab2, tab3= st.tabs(["Close vs SMA", "Candlestick + Streak shading", "Max profit (Buy/Sell)"])
 
 # ---------------- Tab 1: Close vs SMA (graph + slider only) ----------------
 with tab1:
@@ -203,26 +201,8 @@ with tab1:
     hover_ret = df1["Daily Returns"].fillna("—").to_numpy()                                           
 
     fig1 = go.Figure()
-    #fig1.add_trace(go.Scatter(x=df1.index, y=df1["Close"], mode="lines", name="Close")) #close line graph
-    fig1.add_trace(go.Scatter(
-        x=df1.index,
-        y=df1["Close"],
-        mode="lines",
-        name="Close",
-        customdata=hover_ret,
-        hovertemplate="Date:%{x|%Y-%m-%d}<br>"
-                      "Close:%{y:.2f}<br>"
-                      "Daily Return:%{customdata}<extra></extra>"
-    ))
-    #fig1.add_trace(go.Scatter(x=df1.index, y=df1["SMA"],   mode="lines", name=f"SMA{str(sma_window)}")) #sma line graph
-    fig1.add_trace(go.Scatter(
-        x=df1.index,
-        y=df1["SMA"],
-        mode="lines",
-        name=f"SMA{sma_window}",
-        hovertemplate="Date=%{x|%Y-%m-%d}<br>"
-                      f"SMA{sma_window}=%{{y:.2f}}<extra></extra>"
-    ))
+    fig1.add_trace(go.Scatter(x=df1.index,y=df1["Close"],mode="lines",name="Close",customdata=hover_ret,hovertemplate="Date:%{x|%Y-%m-%d}<br>""Close:%{y:.2f}<br>""Daily Return:%{customdata}<extra></extra>"))
+    fig1.add_trace(go.Scatter(x=df1.index,y=df1["SMA"],mode="lines",name=f"SMA{sma_window}",hovertemplate="Date=%{x|%Y-%m-%d}<br>"f"SMA{sma_window}=%{{y:.2f}}<extra></extra>"))
     fig1.update_layout(margin=dict(l=10, r=10, t=30, b=10), legend_title=None) #graph layout
     st.plotly_chart(fig1, use_container_width=True)
 
@@ -234,14 +214,7 @@ with tab2:
 
     # Chart on top
     fig2 = go.Figure([
-        go.Candlestick(
-            x=enriched.index,
-            open=enriched["Open"], high=enriched["High"],
-            low=enriched["Low"], close=enriched["Close"],
-            increasing_line_color="green", decreasing_line_color="red",
-            name="OHLC"
-        )
-    ])
+        go.Candlestick(x=enriched.index,open=enriched["Open"], high=enriched["High"],low=enriched["Low"], close=enriched["Close"],increasing_line_color="green", decreasing_line_color="red",name="OHLC")])
     runs = enriched[enriched["Direction"].isin(["UP","DOWN"])].copy()
     # identify run boundaries
     is_new = (runs["Direction"] != runs["Direction"].shift(1)).fillna(True)
@@ -249,11 +222,7 @@ with tab2:
     for _, grp in runs.groupby(run_ids):
         d = grp["Direction"].iloc[0]
         x0, x1 = grp.index.min(), grp.index.max() + pd.Timedelta(days=1)
-        fig2.add_vrect(
-            x0=x0, x1=x1,
-            fillcolor=("green" if d == "UP" else "red"),
-            opacity=0.08, line_width=0
-    )
+        fig2.add_vrect(x0=x0, x1=x1,fillcolor=("green" if d == "UP" else "red"),opacity=0.08, line_width=0) # shading of runs
     fig2.update_layout(margin=dict(l=10, r=10, t=30, b=10))
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -288,21 +257,8 @@ with tab3:
     # Chart
     fig3 = go.Figure()
     fig3.add_trace(go.Scatter(x=df3.index, y=df3["Close"], mode="lines", name="Close"))
-
-    fig3.add_trace(go.Scatter(
-        x=buy_x, y=buy_y, mode="markers", name="Buy",
-        marker=dict(symbol="triangle-up", size=10, color="green"),
-        hovertemplate="Buy<br>Date=%{x|%Y-%m-%d}<br>Price=%{y:.2f}<extra></extra>"
-    ))
-    fig3.add_trace(go.Scatter(
-        x=sell_x, y=sell_y, mode="markers", name="Sell",
-        marker=dict(symbol="triangle-down", size=10, color="red"),
-        customdata=profit,
-        hovertemplate=("Sell<br>Date=%{x|%Y-%m-%d}<br>"
-                       "Price=%{y:.2f}<br>"
-                       "Trade P/L=%{customdata:.2f}<extra></extra>")
-    ))
-
+    fig3.add_trace(go.Scatter(x=buy_x, y=buy_y, mode="markers", name="Buy",marker=dict(symbol="triangle-up", size=10, color="green"),hovertemplate="Buy<br>Date=%{x|%Y-%m-%d}<br>Price=%{y:.2f}<extra></extra>"))
+    fig3.add_trace(go.Scatter(x=sell_x, y=sell_y, mode="markers", name="Sell",marker=dict(symbol="triangle-down", size=10, color="red"),customdata=profit,hovertemplate=("Sell<br>Date=%{x|%Y-%m-%d}<br>""Price=%{y:.2f}<br>""Trade P/L=%{customdata:.2f}<extra></extra>")))
     fig3.update_layout(margin=dict(l=10, r=10, t=30, b=10), legend_title=None)
     st.plotly_chart(fig3, use_container_width=True)
 
