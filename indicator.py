@@ -40,3 +40,4 @@ def daily_returns(df):
 
     df['Daily Returns'] = returns #Assigning column to dataframe is O(n)
     return df #Total time and space complexity is O(n)
+ 
