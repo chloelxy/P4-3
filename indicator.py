@@ -40,33 +40,3 @@ def daily_returns(df):
 
     df['Daily Returns'] = returns #Assigning column to dataframe is O(n)
     return df #Total time and space complexity is O(n)
-
-def plotting_graph(sma_values, stock, window):
-    try:
-        df_plot = sma_values.copy()
-        # yfinance returns Date as index; ensure we have a 'Date' column
-        if 'Date' not in df_plot.columns:
-            df_plot = df_plot.reset_index().rename(columns={'index': 'Date'})
-        # Coerce and sort by date
-        df_plot['Date'] = pd.to_datetime(df_plot['Date'], errors='coerce')
-        df_plot = df_plot.dropna(subset=['Date']).sort_values('Date').reset_index(drop=True)
-
-        dates = df_plot['Date']
-        close_price = df_plot['Close']
-        sma = df_plot['SMA']
-
-        plt.figure(figsize=(12, 6))
-        plt.plot(dates, close_price, label=f"{stock} Price", color='blue')
-        plt.plot(dates, sma, label = f"{window}D SMA", color='orange')
-
-        plt.xlabel('Date')
-        plt.ylabel('Price')
-        plt.title(f" {stock} Price Vs {window}D SMA")
-        plt.legend()
-        plt.grid(True)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
-
-    except Exception as error:
-        print(f"Error plotting graph: {error}")
