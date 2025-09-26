@@ -1,7 +1,8 @@
 from datetime import datetime
 import pandas as pd
 from data import dataset  
-from streak import movement_direction, run_summary  
+from streak import movement_direction, run_summary
+import indicator
 
 PERIOD = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "MAX": "max"}
 
@@ -31,6 +32,17 @@ def main():
             period = PERIOD[period_input]
             break
         print("Invalid period. Try again.")
+    #get Sma period
+    while True:
+        try:
+            window = int(input("Enter SMA Period (5, 10, 21...): ").strip())
+            if window > 0:
+                window = window
+                break
+            else:
+                print("Invalid SMA. Try again.")
+        except ValueError:
+            print("Invalid input. Try again.")
         
     #get period data
     df = dataset(ticker, period)
@@ -41,7 +53,12 @@ def main():
     df = df.sort_index()
     if "Close" not in df.columns:
         print("Data has no 'Close' column.")
-        
+
+    sma_values = indicator.calculate_sma(df, window) #Manual calculate SMA
+    returns = indicator.daily_returns(df)
+
+    print(f"{window}-Day SMA:\n {sma_values}")
+
     # Upward Downward movement direction and streak summary - Start
     enriched_df = movement_direction(df)
     summary = run_summary(enriched_df)

@@ -1,60 +1,41 @@
-import yfinance as yf
-import matplotlib.pyplot as plt
 import pandas as pd
-import os
-from datetime import datetime
 
-#load the dataset
-def dataset(stock, period):
-    stock = yf.Ticker(stock)
-    hist = stock.history(period=period)
-    df = pd.DataFrame(hist)
-    print("Your dataframe is:\n")
-    print(df)
-    return df
-
-#function to remove rows with missing values
+#function to calculate SMA (Sliding Window) approach
 def calculate_sma(df, window):
-    sma_values = []
-    closes = df['Close'].tolist()
+    sma_values = [] # -> O(n) space to hold n values
+    closes = df['Close'].tolist() # -> O(n) time and space to convert to list
 
-    for i in range(len(closes)):
-        if i < window - 1:
-            sma_values.append(None) #Not enough data
+    window_sum = 0
+    for i in range(len(closes)): # -> O(n) Loop
+        window_sum += closes[i] # -> O(1) time and space (scalar variables)
+
+        if i >=window:
+            #subtract the value that just moved out of window
+            window_sum -= closes[i-window] # -> O(1) time and space
+        if i <window -1:
+            #Not enough data points to compute SMA yet, so append None
+            sma_values.append(None) # -> O(1) time and space
         else:
-            window_sum = sum(closes[i - window + 1: i+1])
-            sma = window_sum /window
+            #Compute SMA by dividing the sum of the window by the window size
+            sma = window_sum / window
             sma_values.append(sma)
 
-    df['SMA'] = sma_values
-    return df
+    df['SMA'] = sma_values #Adds SMA values to 'SMA' column in dataframe
+    return df #Total time space complexity is O(n)
 
-def plotting_graph(sma_values):
-    try:
-        df_plot = sma_values.copy()
-        # yfinance returns Date as index; ensure we have a 'Date' column
-        if 'Date' not in df_plot.columns:
-            df_plot = df_plot.reset_index().rename(columns={'index': 'Date'})
-        # Coerce and sort by date
-        df_plot['Date'] = pd.to_datetime(df_plot['Date'], errors='coerce')
-        df_plot = df_plot.dropna(subset=['Date']).sort_values('Date').reset_index(drop=True)
+def daily_returns(df):
+    returns = [] #storing n values in list -> O(n) space
+    closes = df['Close'].tolist()
 
-        dates = df_plot['Date']
-        close_price = df_plot['Close']
-        sma = df_plot['SMA']
+    for i in range(1, len(closes)): #loop runs from 1 to n-1 -> (n-1) -> O(n)
+        prev = closes[i-1]
+        curr = closes[i]
+        daily_return = (((curr - prev) / prev) * 100) #Basic arithmetic and indexing -> O(1)
+        daily_return = round(daily_return, 2)
+        returns.append(f"{daily_return}%")
 
-        plt.figure(figsize=(12, 6))
-        plt.plot(dates, close_price, label='Close Price', color='blue')
-        plt.plot(dates, sma, label = 'SMA', color='orange')
+    # adds NaN to list so the value is aligned with original dataframe
+    returns = [None] + returns # returns takes O(n) time and space to construct a new list
 
-        plt.xlabel('Date')
-        plt.ylabel('Price')
-        plt.title('Stock Price Vs SMA')
-        plt.legend()
-        plt.grid(True)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
-
-    except Exception as error:
-        print(f"Error plotting graph: {error}")
+    df['Daily Returns'] = returns #Assigning column to dataframe is O(n)
+    return df #Total time and space complexity is O(n)
