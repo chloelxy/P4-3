@@ -1,11 +1,21 @@
+<<<<<<< HEAD
 from datetime import datetime, timedelta
+=======
+from datetime import datetime
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
 import pandas as pd
 import yfinance as yf
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
+<<<<<<< HEAD
 
+=======
+# -----------------------------
+# Your existing stuff (unchanged)
+# -----------------------------
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
 PERIOD = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "MAX": "max"}
 DATE_FORMATS = ("%d-%b-%y", "%Y-%m-%d")
 
@@ -27,6 +37,7 @@ def dataset(stock, period):
 
 # ---------CORE FUNCTIONS START ---------
 def calculate_sma(df, window):
+<<<<<<< HEAD
     sma_values = [] # -> O(n) space to hold n values
     closes = df['Close'].tolist() # -> O(n) time and space to convert to list
 
@@ -64,6 +75,33 @@ def daily_returns(df):
 
     df['Daily Returns'] = returns #Assigning column to dataframe is O(n)
     return df #Total time and space complexity is O(n)
+=======
+    sma_values = []
+    closes = df['Close'].tolist()
+    #window_sum = 0
+    for i in range(len(closes)):
+        if i < window - 1:
+            sma_values.append(None) #Not enough data
+        else:
+            window_sum = sum(closes[i - window + 1: i+1])
+            sma = window_sum /window
+            sma_values.append(sma)
+    df['SMA'] = sma_values
+    return df
+
+def daily_returns(df):
+    returns = []
+    closes = df['Close'].tolist()
+    for i in range(1, len(closes)):
+        prev = closes[i-1]
+        curr = closes[i]
+        daily_return = (((curr - prev) / prev) * 100)
+        daily_return = round(daily_return, 2)
+        returns.append(f"{daily_return}%")
+    returns = [None] + returns
+    df['Daily Returns'] = returns
+    return df
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
 
 def movement_direction(df: pd.DataFrame) -> pd.DataFrame:
     stocks = df.copy()
@@ -115,6 +153,7 @@ def run_summary(df: pd.DataFrame) -> dict:
         "longest_up_length": int(up_max_length), "longest_up_range": up_range,
         "longest_down_length": int(down_max_length), "longest_down_range": down_range
     }
+<<<<<<< HEAD
 
 def max_profit_with_days(prices):
     """
@@ -162,6 +201,13 @@ def max_profit_with_days(prices):
 
 # WEB INTERFACE START
 #=========================================================================
+=======
+# --------- CORE FUNCTIONS END ---------
+
+# -----------------------------
+# WEB INTERFACE
+# -----------------------------
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
 st.set_page_config(page_title="Stock Market Analysis", layout="wide")
 st.title("Stock Market Visualisation Dashboard")
 
@@ -181,13 +227,21 @@ def _get_df(_ticker: str, _period: str) -> pd.DataFrame: #gets base df from data
     return dataset(_ticker, _period)
 
 base_df = _get_df(ticker, period)
+<<<<<<< HEAD
 st.caption(f"Date range: {base_df.index.min().date()} → {base_df.index.max().date()}") # caption to show date range of data
+=======
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
 if base_df is None or base_df.empty or "Close" not in base_df.columns: #checks if base df is empty or has no close value
     st.error("No usable price data returned.")                         #stops the web interface
     st.stop()
 
+<<<<<<< HEAD
 # Tabs for web interface
 tab1, tab2, tab3= st.tabs(["Close vs SMA", "Candlestick + Streak shading", "Max profit (Buy/Sell)"])
+=======
+# Tabs
+tab1, tab2, tab3= st.tabs(["Close vs SMA", "Candlestick + Streak shading", "Max profit (Buy/Sell)"]) #tabs on web interface
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
 
 # ---------------- Tab 1: Close vs SMA (graph + slider only) ----------------
 with tab1:
@@ -202,12 +256,39 @@ with tab1:
     hover_ret = df1["Daily Returns"].fillna("—").to_numpy()                                           
 
     fig1 = go.Figure()
+<<<<<<< HEAD
     fig1.add_trace(go.Scatter(x=df1.index,y=df1["Close"],mode="lines",name="Close",customdata=hover_ret,hovertemplate="Date:%{x|%Y-%m-%d}<br>""Close:%{y:.2f}<br>""Daily Return:%{customdata}<extra></extra>"))
     fig1.add_trace(go.Scatter(x=df1.index,y=df1["SMA"],mode="lines",name=f"SMA{sma_window}",hovertemplate="Date=%{x|%Y-%m-%d}<br>"f"SMA{sma_window}=%{{y:.2f}}<extra></extra>"))
     fig1.update_layout(margin=dict(l=10, r=10, t=30, b=10), legend_title=None) #graph layout
     st.plotly_chart(fig1, use_container_width=True)
 
 # ---------------- Tab 2: Candlestick graph with up/down runs----------------
+=======
+    #fig1.add_trace(go.Scatter(x=df1.index, y=df1["Close"], mode="lines", name="Close")) #close line graph
+    fig1.add_trace(go.Scatter(
+        x=df1.index,
+        y=df1["Close"],
+        mode="lines",
+        name="Close",
+        customdata=hover_ret,
+        hovertemplate="Date:%{x|%Y-%m-%d}<br>"
+                      "Close:%{y:.2f}<br>"
+                      "Daily Return:%{customdata}<extra></extra>"
+    ))
+    #fig1.add_trace(go.Scatter(x=df1.index, y=df1["SMA"],   mode="lines", name=f"SMA{str(sma_window)}")) #sma line graph
+    fig1.add_trace(go.Scatter(
+        x=df1.index,
+        y=df1["SMA"],
+        mode="lines",
+        name=f"SMA{sma_window}",
+        hovertemplate="Date=%{x|%Y-%m-%d}<br>"
+                      f"SMA{sma_window}=%{{y:.2f}}<extra></extra>"
+    ))
+    fig1.update_layout(margin=dict(l=10, r=10, t=30, b=10), legend_title=None) #graph layout
+    st.plotly_chart(fig1, use_container_width=True)
+
+# ---------------- Tab 2: Candlestick + Streak shading ----------------
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
 with tab2:
     df2 = calculate_sma(base_df.copy(), window=sma_window)
     df2 = daily_returns(df2)             # unchanged function (even if not shown in the table)
@@ -215,7 +296,18 @@ with tab2:
 
     # Chart on top
     fig2 = go.Figure([
+<<<<<<< HEAD
         go.Candlestick(x=enriched.index,open=enriched["Open"], high=enriched["High"],low=enriched["Low"], close=enriched["Close"],increasing_line_color="green", decreasing_line_color="red",name="OHLC")])
+=======
+        go.Candlestick(
+            x=enriched.index,
+            open=enriched["Open"], high=enriched["High"],
+            low=enriched["Low"], close=enriched["Close"],
+            increasing_line_color="green", decreasing_line_color="red",
+            name="OHLC"
+        )
+    ])
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
     runs = enriched[enriched["Direction"].isin(["UP","DOWN"])].copy()
     # identify run boundaries
     is_new = (runs["Direction"] != runs["Direction"].shift(1)).fillna(True)
@@ -223,6 +315,7 @@ with tab2:
     for _, grp in runs.groupby(run_ids):
         d = grp["Direction"].iloc[0]
         x0, x1 = grp.index.min(), grp.index.max() + pd.Timedelta(days=1)
+<<<<<<< HEAD
         fig2.add_vrect(x0=x0, x1=x1,fillcolor=("green" if d == "UP" else "red"),opacity=0.08, line_width=0) # shading of runs
     fig2.update_layout(margin=dict(l=10, r=10, t=30, b=10))
     st.plotly_chart(fig2, use_container_width=True)
@@ -279,3 +372,20 @@ with tab3:
         st.info("No profitable trades detected in the selected period.") #message to state that no trades happen
 #===============================================================================================================
 # WEB INTERFACE END
+=======
+        fig2.add_vrect(
+            x0=x0, x1=x1,
+            fillcolor=("green" if d == "UP" else "red"),
+            opacity=0.08, line_width=0
+    )
+    fig2.update_layout(margin=dict(l=10, r=10, t=30, b=10))
+    st.plotly_chart(fig2, use_container_width=True)
+
+    # Table below: only Close, SMA, Direction, RunLength
+    show_cols = ["Close", "SMA", "Direction", "RunLength"]
+    missing = [c for c in show_cols if c not in enriched.columns]
+    if missing:
+        st.error(f"Missing columns for table: {missing}") #checks if 
+    else:
+        st.dataframe(enriched[show_cols].tail(20)) #shows 20 table rows
+>>>>>>> 3bdbf990efe2e6074798ef01bfa7e1e02b64d56f
