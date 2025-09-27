@@ -4,6 +4,10 @@ import yfinance as yf
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
+from data import dataset
+from streak import movement_direction, run_summary
+from indicator import calculate_sma, daily_returns
+from MaxProfitCalculator import max_profit_with_days
 
 
 PERIOD = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "MAX": "max"}
@@ -14,150 +18,6 @@ def fmt_range(rr):
         return "-"
     s, e = rr
     return f"{s.date()} → {e.date()}"
-
-def dataset(stock, period):
-    stock = yf.Ticker(stock)
-    hist = stock.history(period=period)
-    df = pd.DataFrame(hist)
-    print("Your dataframe is:\n")
-    print(df)
-    if df.empty is None or df.empty or "Close" not in df.columns:
-        print("Stock period not valid")
-    return df
-
-# ---------CORE FUNCTIONS START ---------
-def calculate_sma(df, window):
-    sma_values = [] # -> O(n) space to hold n values
-    closes = df['Close'].tolist() # -> O(n) time and space to convert to list
-
-    window_sum = 0
-    for i in range(len(closes)): # -> O(n) Loop
-        window_sum += closes[i] # -> O(1) time and space (scalar variables)
-
-        if i >=window:
-            #subtract the value that just moved out of window
-            window_sum -= closes[i-window] # -> O(1) time and space
-        if i <window -1:
-            #Not enough data points to compute SMA yet, so append None
-            sma_values.append(None) # -> O(1) time and space
-        else:
-            #Compute SMA by dividing the sum of the window by the window size
-            sma = window_sum / window
-            sma_values.append(sma)
-
-    df['SMA'] = sma_values #Adds SMA values to 'SMA' column in dataframe
-    return df
-
-def daily_returns(df):
-    returns = [] #storing n values in list -> O(n) space
-    closes = df['Close'].tolist()
-
-    for i in range(1, len(closes)): #loop runs from 1 to n-1 -> (n-1) -> O(n)
-        prev = closes[i-1]
-        curr = closes[i]
-        daily_return = (((curr - prev) / prev) * 100) #Basic arithmetic and indexing -> O(1)
-        daily_return = round(daily_return, 2)
-        returns.append(f"{daily_return}%")
-
-    # adds NaN to list so the value is aligned with original dataframe
-    returns = [None] + returns # returns takes O(n) time and space to construct a new list
-
-    df['Daily Returns'] = returns #Assigning column to dataframe is O(n)
-    return df #Total time and space complexity is O(n)
-
-def movement_direction(df: pd.DataFrame) -> pd.DataFrame:
-    stocks = df.copy()
-    closing_price_change = stocks["Close"].diff()
-    direction = closing_price_change.where(closing_price_change.notna(), 0.0).apply(
-        lambda x: "UP" if x > 0 else ("DOWN" if x < 0 else "FLAT"))
-    stocks["Direction"] = direction
-    streak_type = stocks["Direction"].isin(["UP", "DOWN"])
-    run_change = (stocks["Direction"] != stocks["Direction"].shift(1)) & streak_type
-    stocks["RunID"] = 0
-    stocks.loc[streak_type, "RunID"] = run_change[streak_type].cumsum()
-    stocks["RunLength"] = 0
-    for runid, grp in stocks[streak_type].groupby("RunID"):
-        stocks.loc[grp.index, "RunLength"] = range(1, len(grp) + 1)
-    return stocks
-
-def run_summary(df: pd.DataFrame) -> dict:
-    runs = df[df["Direction"].isin(["UP", "DOWN"])].copy()
-    if runs.empty:
-        return{
-            "no_up_runs": 0, "no_down_runs": 0, "longest_up_length": 0, "longest_up_range": None,
-            "longest_down_length": 0, "longest_down_range": None
-        }
-    run_groups = runs.groupby(["RunID", "Direction"])
-    run_lengths = run_groups.size().rename("Length").reset_index()
-    no_up_runs = (run_lengths["Direction"] == "UP").sum()
-    no_down_runs = (run_lengths["Direction"] == "DOWN").sum()
-
-    up_runs = run_lengths[run_lengths["Direction"] == "UP"]
-    if not up_runs.empty:
-        up_max_length = up_runs["Length"].max()
-        up_rid = up_runs.loc[up_runs["Length"].idxmax(), "RunID"]
-        up_idx = runs[runs["RunID"] == up_rid].index
-        up_range = (up_idx.min(), up_idx.max())
-    else:
-        up_max_length, up_range = 0, None
-
-    down_runs = run_lengths[run_lengths["Direction"] == "DOWN"]
-    if not down_runs.empty:
-        down_max_length = down_runs["Length"].max()
-        down_rid = down_runs.loc[down_runs["Length"].idxmax(), "RunID"]
-        down_idx = runs[runs["RunID"] == down_rid].index
-        down_range = (down_idx.min(), down_idx.max())
-    else:
-        down_max_length, down_range = 0, None
-
-    return{
-        "no_up_runs": int(no_up_runs), "no_down_runs": int(no_down_runs), 
-        "longest_up_length": int(up_max_length), "longest_up_range": up_range,
-        "longest_down_length": int(down_max_length), "longest_down_range": down_range
-    }
-
-def max_profit_with_days(prices):
-    """
-    Calculates maximum profit with multiple transactions allowed
-    and records actual buy/sell days.
-    """
-    # If prices list is empty or has only one day, no transactions possible
-    if not prices or len(prices) < 2: #check if there is prices in a list & ensure the number of days is = 2 or > 2 in order to do comparison
-        return 0, []
-
-    profit = 0
-    transactions = []
-    i = 0
-    n = len(prices)
-
-    # Loop through the prices list
-    while i < n - 1: #The loop never reaches i = 5, so you won’t accidentally do prices[6] (which doesn’t exist).index is till 5
-
-        # Find local minima (buy day)
-        while i < n - 1 and prices[i + 1] <= prices[i]: #As long as the next day’s price is lower or equal to today’s price, keep moving forward we are skipping days where the stock is flat or going down
-            i += 1 #Move the index forward by 1 day.
-        if i == n - 1: # reached the end “Did we land on the very last day of data?” If yes, there’s no point in buying (because there’s no future day to sell).
-            break
-        buy_day = i
-        buy_price = prices[i]
-
-        i += 1 #Move to the next day After deciding the buy day, we look ahead to search for a good sell day
-
-        # Find local maxima (sell day)
-        while i < n and (i == n - 1 or prices[i] >= prices[i - 1]):#don’t go past the last day. AND If we’re at the last day → stop here (must sell) Otherwise, keep looping as long as today’s price is higher than yesterday’s (still rising).
-            if i == n - 1 or (i < n - 1 and prices[i + 1] < prices[i]):#"“Am I on the very last day?”If yes → we can’t go further, so we must sell here." OR check if tomorrow’s price is lower than today’s price.If yes → it means the price is about to drop.So we should selltoday to lock in profit before it falls.
-                break
-            i += 1 #iis day
-        sell_day = i
-        sell_price = prices[i]
-
-        # Record the transaction and add profit
-        transactions.append((buy_day, sell_day, buy_price, sell_price))
-        profit += sell_price - buy_price
-
-        i += 1 # Move to next day after selling
-    return profit, transactions
-# --------- CORE FUNCTIONS END ---------
 
 
 # WEB INTERFACE START
