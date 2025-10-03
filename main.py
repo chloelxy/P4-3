@@ -10,8 +10,8 @@ from indicator import calculate_sma, daily_returns
 from MaxProfitCalculator import max_profit_with_days
 
 
-PERIOD = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "MAX": "max"}
-DATE_FORMATS = ("%d-%b-%y", "%Y-%m-%d")
+PERIOD = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "3Y":"3y"} #specify periods in dropdown
+DATE_FORMATS = ("%d-%b-%y", "%Y-%m-%d") #displaying format of dates
 
 def fmt_range(rr):
     if rr is None:
@@ -25,31 +25,65 @@ def fmt_range(rr):
 st.set_page_config(page_title="Stock Market Analysis", layout="wide")
 st.title("Stock Market Visualisation Dashboard")
 
-# Inputs on web interface
-col1, col2 = st.columns([2, 1])
+TICKER_OPTIONS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "NFLX", "JPM", "V"]
+# Apple, Microsoft, Google, Amazon, Tesla, Nvidia, Meta, Netflix, JPMorgan, Visa
+# Top 10 popular stocks
+
+# Inputs for period on web interface (dropdown)
+col1, col2 = st.columns([0.5,1.5]) # defines the columns and splits them to size
+#with col1:
+#    ticker = st.selectbox("Select Ticker", TICKER_OPTIONS, index=0)
 with col1:
-    ticker = st.text_input("Ticker", value="AAPL").strip().upper()
-with col2:
     period_key = st.selectbox("Period", list(PERIOD.keys()), index=3)  # default 1Y
+
+# Inputs for ticker on web interface (side menu) 
+st.sidebar.header("Options")
+ticker = st.sidebar.selectbox("Select Ticker", TICKER_OPTIONS, index=0)
+st.sidebar.subheader("Stocks Today")
+live_data = {}
+for symbol in TICKER_OPTIONS:
+    try:
+        stock = yf.Ticker(symbol)
+        hist = stock.history(period="2d")
+        if len(hist) >= 2:
+            today_close = hist["Close"].iloc[-1]
+            yesterday_close = hist["Close"].iloc[-2]
+            change = today_close - yesterday_close
+            pct_change = (change / yesterday_close) * 100
+            live_data[symbol] = f"{today_close:.2f} ({pct_change:+.2f}%)"
+    except Exception:
+        live_data[symbol] = "N/A"
+
+for symbol, info in live_data.items():
+    st.sidebar.write(f"{symbol}: {info}")
+
+#period_key = st.sidebar.selectbox("Period", list(PERIOD.keys()), index=3)
 period = PERIOD[period_key]
 
 if not ticker: #check validity of ticker
     st.warning("Enter a ticker to begin.")
     st.stop()
 
+st.subheader(f"Displaying data for: {ticker}")
+
 def _get_df(_ticker: str, _period: str) -> pd.DataFrame: #gets base df from dataset function for graph visualisations
     return dataset(_ticker, _period)
 
-base_df = _get_df(ticker, period)
-st.caption(f"Date range: {base_df.index.min().date()} → {base_df.index.max().date()}") # caption to show date range of data
-if base_df is None or base_df.empty or "Close" not in base_df.columns: #checks if base df is empty or has no close value
-    st.error("No usable price data returned.")                         #stops the web interface
+try:
+    base_df = _get_df(ticker, period)
+    st.caption(f"Date range: {base_df.index.min().date()} → {base_df.index.max().date()}") # caption to show date range of data
+except Exception as e:
+    st.error(f"Failed to retrieve data: {e}")
     st.stop()
 
-# Tabs for web interface
-tab1, tab2, tab3= st.tabs(["Close vs SMA", "Candlestick + Streak shading", "Max profit (Buy/Sell)"])
+#if base_df is None or base_df.empty or "Close" not in base_df.columns: #checks if base df is empty or has no close value
+#    st.error("No usable price data returned.")                         #stops the web interface
+#    st.stop()
 
-# ---------------- Tab 1: Close vs SMA (graph + slider only) ----------------
+# Tabs for web interface
+tab1, tab2, tab3, tab4= st.tabs(["Close vs SMA", "Upward/Downward Runs", "Max profit(Buy/Sell)", "Validation"])
+
+# Tab 1: Close vs SMA 
 with tab1:
     sma_window = st.slider("SMA period", min_value=5, max_value=60, value=30, step=1) #can change min,max value of SMA slider
     df1 = calculate_sma(base_df.copy(), window=sma_window) # creating temp dataframe to store sma values
@@ -67,7 +101,7 @@ with tab1:
     fig1.update_layout(margin=dict(l=10, r=10, t=30, b=10), legend_title=None) #graph layout
     st.plotly_chart(fig1, use_container_width=True)
 
-# ---------------- Tab 2: Candlestick graph with up/down runs----------------
+# Tab 2: Shaded candlestick graph with up/down runs
 with tab2:
     df2 = calculate_sma(base_df.copy(), window=sma_window)
     df2 = daily_returns(df2)             # unchanged function (even if not shown in the table)
@@ -95,7 +129,7 @@ with tab2:
     else:
         st.dataframe(enriched[show_cols].tail(20)) #shows 20 table rows
 
-# ---------------- Tab 3: Max profit (Buy/Sell) ----------------
+# Tab 3: Max profit (Buy/Sell)
 with tab3:
     # Reuse the same SMA window as Tab 1
     df3 = calculate_sma(base_df.copy(), window=sma_window)
@@ -128,8 +162,8 @@ with tab3:
     if transactions:
         transaction_df = pd.DataFrame({
             "Trade #":range(1, len(transactions) + 1),
-            "Buy Date":[dates[b].date() for (b, s, bp, sp) in transactions],
-            "Sell Date":[dates[s].date() for (b, s, bp, sp) in transactions],
+            "Buy Date":[dates[b].date() for (b, _, _, _) in transactions],
+            "Sell Date":[dates[s].date() for (_, s, _, _) in transactions],
             "Buy Price":[bp for (_, _, bp, _) in transactions],
             "Sell Price":[sp for (_, _, _, sp) in transactions],
             "Trade P/L":[sp - bp for (_, _, bp, sp) in transactions],
@@ -137,5 +171,9 @@ with tab3:
         st.dataframe(transaction_df, use_container_width=True)
     else:
         st.info("No profitable trades detected in the selected period.") #message to state that no trades happen
+
+with tab4:
+    fig4 = go.Figure()
+    #add validation 
 #===============================================================================================================
 # WEB INTERFACE END
