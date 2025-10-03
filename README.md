@@ -20,3 +20,7 @@ pip install yfinance
 
 ```bash
 pip install plotly
+```
+```bash
+pip install streamlit
+```
