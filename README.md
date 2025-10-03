@@ -15,3 +15,6 @@ You also need to install the required Python packages. The main dependency is `y
 
 ```bash
 pip install yfinance
+
+```bash
+pip install plotly
