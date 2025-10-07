@@ -8,6 +8,7 @@ from data import dataset
 from streak import movement_direction, run_summary
 from indicator import calculate_sma, daily_returns
 from MaxProfitCalculator import max_profit_with_days
+import plotly.express as px
 
 
 PERIOD = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "MAX": "max"}
@@ -59,13 +60,21 @@ with tab1:
     # "—" for first day (None), then to numpy for Plotly customdata
     #.fillna("-") replaces first value to - as there is not previous data to compare
     #.to_numpy converts the series to plain numpy array as it is more efficient and guarantees the length matches 
-    hover_ret = df1["Daily Returns"].fillna("—").to_numpy()                                           
+    hover_ret = df1["Daily Returns"].fillna("—").to_numpy()
 
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=df1.index,y=df1["Close"],mode="lines",name="Close",customdata=hover_ret,hovertemplate="Date:%{x|%Y-%m-%d}<br>""Close:%{y:.2f}<br>""Daily Return:%{customdata}<extra></extra>"))
+    st.title(f"{ticker} Close Price vs SMA{sma_window}")
+    fig1.add_trace(go.Scatter(x=df1.index,y=df1["Close"],mode="lines",name=f"{ticker}",customdata=hover_ret,hovertemplate="Date:%{x|%Y-%m-%d}<br>""Close:%{y:.2f}<br>""Daily Return:%{customdata}<extra></extra>"))
     fig1.add_trace(go.Scatter(x=df1.index,y=df1["SMA"],mode="lines",name=f"SMA{sma_window}",hovertemplate="Date=%{x|%Y-%m-%d}<br>"f"SMA{sma_window}=%{{y:.2f}}<extra></extra>"))
     fig1.update_layout(margin=dict(l=10, r=10, t=30, b=10), legend_title=None) #graph layout
     st.plotly_chart(fig1, use_container_width=True)
+
+    #Daily Returns graph (volatility)
+    df1['Daily_Returns'] = df1['Close'].pct_change()
+    st.header("Daily Returns Analysis")
+    fig2 = px.line(df1, x=df1.index, y='Daily_Returns', title='Daily Volatility')
+    fig2.update_traces(line_color='orange')
+    st.plotly_chart(fig2, use_container_width=True)
 
 # ---------------- Tab 2: Candlestick graph with up/down runs----------------
 with tab2:
