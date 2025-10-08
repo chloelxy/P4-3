@@ -1,5 +1,5 @@
 import pandas as pd
-import testing
+import tests.test_sma
 
 #function to calculate SMA (Sliding Window) approach
 def calculate_sma(df, window):
