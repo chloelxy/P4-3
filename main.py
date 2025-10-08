@@ -149,11 +149,16 @@ with tab2:
     # identify run boundaries
     is_new = (runs["Direction"] != runs["Direction"].shift(1)).fillna(True) #marks start of new run when direction changes
     run_ids = is_new.cumsum() #assigns unique ID to each run using cumulative sum
-    for _, grp in runs.groupby(run_ids): #loops of each run group
-        d = grp["Direction"].iloc[0] #direction determines the color of the shading
-        x0, x1 = grp.index.min(), grp.index.max() + pd.Timedelta(days=1) #start and end of run + add 1 day to x1 to make candlestick more visible
-        fig2.add_vrect(x0=x0, x1=x1,fillcolor=("green" if d == "UP" else "red"),opacity=0.08, line_width=0) # add verticle rectangle (up = green, down = red)
-    
+    shapes = [] #create empty list to hold all rectangles
+    for _, grp in runs.groupby(run_ids):
+        d = grp["Direction"].iloc[0]
+        x0, x1 = grp.index.min(), grp.index.max() + pd.Timedelta(days=1)
+        shapes.append(dict(type="rect", xref="x", yref="paper", #creates a shape dictionary and adds it to list
+                       x0=x0, x1=x1, y0=0, y1=1,
+                       fillcolor=("green" if d == "UP" else "red"),
+                       opacity=0.08, line_width=0))
+    fig2.update_layout(shapes=shapes) #apply all shapes at once
+
     # concise KPI annotations on the chart
     fig2.add_annotation(
         xref="paper", yref="paper", x=0.01, y=1.07, showarrow=False, align="left",
