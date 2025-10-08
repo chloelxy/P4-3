@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from streak_v2 import movement_direction, run_summary
+from src.streaks import movement_direction, run_summary
 
 
 

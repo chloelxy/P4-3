@@ -1,5 +1,5 @@
 [project]
-name = "Stock Analysis Tool"
+name = "stock-analysis-tool"
 version = "0.1.0"
 description = "Stock visualisation & analytics (streaks, SMA, max-profit)"
 readme = "README.md"
@@ -19,4 +19,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 addopts = "-q"
-pythonpath = ["src"]   # so tests find the package
+pythonpath = ["."]
