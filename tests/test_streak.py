@@ -4,14 +4,14 @@ import pandas as pd
 import pytest
 from src.streaks import movement_direction, run_summary
 
-
-
-# ---------- helpers ----------
 def df_ohlc_from_close(vals, start="2025-01-01", freq="D"):
-    idx = pd.date_range(start, periods=len(vals), freq=freq)
-    s = pd.Series(vals, index=idx, name="Close")
-    # simple OHLC scaffold so Candlestick has columns
-    return pd.DataFrame({"Open": s, "High": s, "Low": s, "Close": s})
+    idx = pd.date_range(start=start, periods=len(vals), freq=freq)
+    s = pd.Series(vals, index=idx, name="close")
+    return pd.DataFrame({"Close": s})
+
+def _run_sizes(df_out):
+    runs = df_out[df_out["Direction"].isin(["UP", "DOWN"])]
+    return runs.groupby(["RunID", "Direction"]).size().to_list()
 
 
 # ---------- validation / shape ----------
@@ -43,23 +43,23 @@ def test_streak_rows_have_positive_ids_and_lengths():
 def test_simple_up_then_down_produces_two_runs():
     df = df_ohlc_from_close([1, 2, 3, 2, 1])
     out = movement_direction(df)
-    runs = out[out["Direction"].isin(["UP", "DOWN"])]
-    sizes = runs.groupby(["RunID", "Direction"]).size().to_list()
-    assert sorted(sizes) == [3, 3]  # UP len 3, DOWN len 3
+    sizes = _run_sizes(out)
+    # edge-based: UP has moves 1->2, 2->3 (2); DOWN has 3->2, 2->1 (2)
+    assert sorted(sizes) == [2, 2]
 
 def test_flats_break_runs():
     df = df_ohlc_from_close([1, 2, 3, 3, 3, 2, 1])
     out = movement_direction(df)
-    runs = out[out["Direction"].isin(["UP", "DOWN"])]
-    sizes = runs.groupby(["RunID", "Direction"]).size().to_list()
-    assert sorted(sizes) == [3, 3]
+    sizes = _run_sizes(out)
+    # internal FLATs don't add moves; sizes still 2 and 2
+    assert sorted(sizes) == [2, 2]
 
 def test_leading_and_trailing_flats_ignored_in_runs():
     df = df_ohlc_from_close([7, 7, 7, 6, 5, 5])
     out = movement_direction(df)
-    runs = out[out["Direction"].isin(["UP", "DOWN"])]
-    sizes = runs.groupby(["RunID", "Direction"]).size().to_list()
-    assert sizes == [3]  # one DOWN run (6->5->5 counts as DOWN, then FLAT)
+    sizes = _run_sizes(out)
+    # leading/trailing FLATs ignored; DOWN moves: 7->6, 6->5 (2)
+    assert sizes == [2]
 
 def test_single_point_has_no_runs():
     df = df_ohlc_from_close([42])
