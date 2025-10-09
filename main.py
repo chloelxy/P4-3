@@ -109,9 +109,9 @@ with tab1:
     st.plotly_chart(fig1, use_container_width=True)
 
     #Daily Returns graph (volatility)
-    df1['Daily_Returns'] = df1['Close'].pct_change()
+    df1 = daily_returns(df1)
     st.header("Daily Returns Analysis")
-    fig2 = px.line(df1, x=df1.index, y='Daily_Returns', title='Daily Volatility')
+    fig2 = px.line(df1, x=df1.index, y=f"Daily Returns", title='Daily Volatility')
     fig2.update_traces(line_color='orange')
     st.plotly_chart(fig2, use_container_width=True)
 

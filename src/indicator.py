@@ -29,7 +29,10 @@ def calculate_sma(df, window):
 
 def daily_returns(df):
     returns = [] #storing n values in list -> O(n) space
-    closes = df['Close'].tolist()
+    closes = df ["Close"]
+    if isinstance(closes, pd.DataFrame):
+        closes = closes.squeeze() # Convert DataFrame to Series if necessary
+    closes = closes.tolist()
 
     for i in range(1, len(closes)): #loop runs from 1 to n-1 -> (n-1) -> O(n)
         prev = closes[i-1]

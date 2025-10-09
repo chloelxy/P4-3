@@ -23,5 +23,3 @@ def run_validations():
 
 if __name__ == "__main__":
     run_validations()
-    df = yf.download("AAPL", period="1mo", interval="1d", auto_adjust=True)
-    comparison = test_sma(df, window =5, n=20)
