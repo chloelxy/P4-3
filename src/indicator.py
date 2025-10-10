@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 #function to calculate SMA (Sliding Window) approach
-def calculate_sma(df, window):
+def calculate_sma(df: pd.DataFrame, window: int) -> pd.DataFrame:
     sma_values = [] # -> O(n) space to hold n values
     closes = df ['Close']
     if isinstance(closes, pd.DataFrame):
