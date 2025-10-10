@@ -31,8 +31,6 @@ def daily_returns(df: pd.DataFrame) -> pd.DataFrame:
     closes = df["Close"].reset_index(drop=True)  # O(n) time to copy/clean column; O(n) space for closes list
     returns = [np.nan]  # O(1) time & space for initialization
 
-    last_valid_idx = 0  # O(1) time & space
-
     # Loop runs (n - 1) times → overall O(n) time
     for i in range(1, len(closes)):
         curr = closes[i]     # O(1) access
