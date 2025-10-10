@@ -35,16 +35,15 @@ def daily_returns(df: pd.DataFrame) -> pd.DataFrame:
 
     # Loop runs (n - 1) times → overall O(n) time
     for i in range(1, len(closes)):
-        curr = closes[i]                # O(1) access
-        prev = closes[last_valid_idx]   # O(1) access
+        curr = closes[i]     # O(1) access
+        prev = closes[i-1]   # O(1) access
 
         # Checking NaN and zero → O(1) time
         if pd.isna(curr) or pd.isna(prev) or prev == 0:
-            returns.append(np.nan)      # O(1) amortized time, O(n) space overall for list
+            returns.append(np.nan)  # O(1) amortized time, O(n) space overall for list
         else:
             change = ((curr - prev) / prev) * 100  # O(1) arithmetic operations
             returns.append(round(change, 2))       # O(1) rounding + append
-            last_valid_idx = i                     # O(1) assignment
 
     df["Daily Returns"] = returns  # O(n) time to assign new column; O(n) space
     return df  # Total time: O(n), Total space: O(n)

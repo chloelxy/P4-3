@@ -75,7 +75,7 @@ def validate_daily_returns():
 
         # Pandas Returns
         df['Pandas_Returns'], t_pandas = time_function(
-            lambda x: x['Close'].pct_change() * 100, df
+            lambda x: x['Close'].pct_change(fill_method=None) * 100, df
         )
 
         print(f" Test Case: {name}")
