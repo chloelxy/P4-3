@@ -1,5 +1,5 @@
 import pandas as pd
-import tests.test_sma
+import numpy as np
 
 #function to calculate SMA (Sliding Window) approach
 def calculate_sma(df, window):
@@ -27,22 +27,25 @@ def calculate_sma(df, window):
     df['SMA'] = sma_values #Adds SMA values to 'SMA' column in dataframe
     return df #Total time space complexity is O(n)
 
-def daily_returns(df):
-    returns = [] #storing n values in list -> O(n) space
-    closes = df ["Close"]
-    if isinstance(closes, pd.DataFrame):
-        closes = closes.squeeze() # Convert DataFrame to Series if necessary
-    closes = closes.tolist()
+def daily_returns(df: pd.DataFrame) -> pd.DataFrame:
+    closes = df["Close"].reset_index(drop=True)  # O(n) time to copy/clean column; O(n) space for closes list
+    returns = [np.nan]  # O(1) time & space for initialization
 
-    for i in range(1, len(closes)): #loop runs from 1 to n-1 -> (n-1) -> O(n)
-        prev = closes[i-1]
-        curr = closes[i]
-        daily_return = (((curr - prev) / prev) * 100) #Basic arithmetic and indexing -> O(1)
-        daily_return = round(daily_return, 2)
-        returns.append(f"{daily_return}%")
+    last_valid_idx = 0  # O(1) time & space
 
-    # adds NaN to list so the value is aligned with original dataframe
-    returns = [None] + returns # returns takes O(n) time and space to construct a new list
+    # Loop runs (n - 1) times → overall O(n) time
+    for i in range(1, len(closes)):
+        curr = closes[i]                # O(1) access
+        prev = closes[last_valid_idx]   # O(1) access
 
-    df['Daily Returns'] = returns #Assigning column to dataframe is O(n)
-    return df #Total time and space complexity is O(n)
+        # Checking NaN and zero → O(1) time
+        if pd.isna(curr) or pd.isna(prev) or prev == 0:
+            returns.append(np.nan)      # O(1) amortized time, O(n) space overall for list
+        else:
+            change = ((curr - prev) / prev) * 100  # O(1) arithmetic operations
+            returns.append(round(change, 2))       # O(1) rounding + append
+            last_valid_idx = i                     # O(1) assignment
+
+    df["Daily Returns"] = returns  # O(n) time to assign new column; O(n) space
+    return df  # Total time: O(n), Total space: O(n)
+

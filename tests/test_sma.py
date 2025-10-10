@@ -1,70 +1,93 @@
 import pandas as pd
-import src.indicator as indicator
-import yfinance as yf
+from src.indicator import calculate_sma, daily_returns
+import numpy as np
+import time
 
-# SMA Validation using Pandas rolling mean, Takes in dataframe and window size
-def test_sma(df, window=5, n=20):
-    # Custom SMA
-    df_custom = indicator.calculate_sma(df.copy(), window)
+# ----------------- Helper Functions -----------------
 
-    # Pandas SMA
-    df_expected = df.copy()
-    df_expected["SMA_Rolling"] = df_expected["Close"].rolling(window=window).mean()
+def time_function(func, *args, **kwargs):
+    """Measures and returns the result and duration of a function call."""
+    start = time.time()
+    result = func(*args, **kwargs)
+    duration = time.time() - start
+    return result, duration
 
-    # Build comparison table
-    comparison = pd.DataFrame({
-        "Close": df_custom["Close"].squeeze(),
-        "Custom_SMA": df_custom["SMA"].squeeze(),
-        "Pandas_SMA": df_expected["SMA_Rolling"].squeeze(),
-    })
-    # Drop rows with NaN in either SMA column
-    comparison = comparison.dropna(subset=["Custom_SMA", "Pandas_SMA"])
-    # Limit to first n rows after dropping NaN
-    comparison = comparison.head(n)
-    # Add True/False column
-    comparison["Match"] = comparison["Custom_SMA"].round(5).eq(comparison["Pandas_SMA"].round(5))
 
-    print("=================== SMA Validation Results: ===================")
-    print(comparison)
-    if comparison["Match"].all():
-        print(f"\n✅ PASS: All values match (window={window}, first {n} non-NaN rows)")
-    else:
-        print(f"\n❌ FAIL: Some mismatches found (window={window}, first {n} non-NaN rows)")
-    print("===============================================================")
-    return comparison
+def print_comparison(df, col_manual, col_pandas, label):
+    df[col_manual] = df[col_manual].round(2)
+    df[col_pandas] = df[col_pandas].round(2)
+    df['Match'] = np.isclose(df[col_manual], df[col_pandas], equal_nan=True)
+    print(f"\n {label}")
+    print(df[[col_manual, col_pandas, 'Match']])
+    print(f"✅ All Match: {df['Match'].all()}\n")
 
-def test_daily_returns(df, n=20):
-    # Custom Daily Returns
-    df_custom = indicator.daily_returns(df.copy())
 
-    # Pandas Daily Returns
-    df_expected = df.copy()
-    df_expected["Pandas_Daily_Returns"] = df_expected["Close"].pct_change() * 100
-    df_expected["Pandas_Daily_Returns"] = df_expected["Pandas_Daily_Returns"].round(2).astype(str) + "%"
+# ----------------- Test Datasets -----------------
 
-    # Build comparison table
-    comparison_daily = pd.DataFrame({
-        "Close": df_custom["Close"].squeeze(),
-        "Custom_Daily_Returns": df_custom["Daily Returns"].squeeze(),
-        "Pandas_Daily_Returns": df_expected["Pandas_Daily_Returns"].squeeze(),
-    })
-    # Drop rows with NaN in either Daily Returns column
-    comparison_daily = comparison_daily.dropna(subset=["Custom_Daily_Returns", "Pandas_Daily_Returns"])
-    # Limit to first n rows after dropping NaN
-    comparison_daily = comparison_daily.head(n)
-    # Add True/False column
-    comparison_daily["Match"] = comparison_daily["Custom_Daily_Returns"].eq(comparison_daily["Pandas_Daily_Returns"])
-    print("\n Now running tests for Daily Returns...\n")
-    print("=================== Daily Returns Validation Results: ===================")
-    print(comparison_daily)
-    if comparison_daily["Match"].all():
-        print(f"\n✅ PASS: All values match (first {n} non-NaN rows)")
-    else:
-        print(f"\n❌ FAIL: Some mismatches found (first {n} non-NaN rows)")
-    print("==========================================================================")
-    return comparison_daily
+def get_test_cases():
+    return {
+        "Increasing": [100, 105, 110, 115, 120],
+        "Fluctuating": [100, 102, 99, 105, 103],
+        "Constant": [50, 50, 50, 50, 50],
+        "Decreasing": [120, 115, 110, 105, 100],
+        "With missing": [100, np.nan, 120, np.nan, 130]
+    }
+
+
+# ----------------- SMA Validation -----------------
+
+def validate_sma(window=3):
+    print("\n================= SMA Validation =================\n")
+    test_cases = get_test_cases()
+
+    for name, prices in test_cases.items():
+        df = pd.DataFrame({'Close': prices})
+
+        # Manual SMA
+        df_manual = df.copy()
+        df_manual, t_manual = time_function(calculate_sma, df_manual, window)
+        df['Manual_SMA'] = df_manual['SMA']
+
+        # Pandas SMA
+        df['Pandas_SMA'], t_pandas = time_function(
+            lambda x: x['Close'].rolling(window).mean(), df
+        )
+
+        print(f" Test Case: {name}")
+        print_comparison(df, 'Manual_SMA', 'Pandas_SMA', "SMA Comparison")
+        print(f"⏱ Manual Time: {t_manual:.6f}s | Pandas Time: {t_pandas:.6f}s")
+        print("-" * 50)
+
+
+# ----------------- Daily Returns Validation -----------------
+
+def validate_daily_returns():
+    print("\n============== Daily Returns Validation ==============\n")
+    test_cases = get_test_cases()
+
+    for name, prices in test_cases.items():
+        df = pd.DataFrame({'Close': prices})
+
+        # Manual Returns
+        df_manual = df.copy()
+        df_manual, t_manual = time_function(daily_returns, df_manual)
+        df['Manual_Returns'] = df_manual['Daily Returns']
+
+        # Pandas Returns
+        df['Pandas_Returns'], t_pandas = time_function(
+            lambda x: x['Close'].pct_change() * 100, df
+        )
+
+        print(f" Test Case: {name}")
+        print_comparison(df, 'Manual_Returns', 'Pandas_Returns', "Daily Returns Comparison")
+        print(f"⏱ Manual Time: {t_manual:.6f}s | Pandas Time: {t_pandas:.6f}s")
+        print("-" * 50)
+
+
+# ----------------- Run Both -----------------
 
 if __name__ == "__main__":
-    df = yf.download("AAPL", period="1mo", interval="1d", auto_adjust=True)
-    comparison_sma = test_sma(df, window =5, n=20)
-    comparison_daily = test_daily_returns(df, n=20)
+    validate_sma(window=3)
+    validate_daily_returns()
+
+
