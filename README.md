@@ -8,9 +8,9 @@ Team List:
 * Chloe Lim (2503580@sit.singaporetech.edu.sg)
 * Chan Si Ying, Nasya (2502538@sit.singaporetech.edu.sg)
 
-## **Project Structure**
+## **Project Structure (main Branch)**
 ```
-P4-3-sandbox/
+P4-3/
 ├─ src/
 │  ├─ data.py            # dataset() -> fetches yfinance OHLC data
 │  ├─ indicator.py       # calculate_sma(), daily_returns()
