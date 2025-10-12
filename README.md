@@ -18,6 +18,7 @@ P4-3/
 │  └─ streaks.py         # movement_direction(), run_summary()
 ├─ tests/
 │  ├─ conftest.py        # adds project root to sys.path for imports
+│  └─ test_max_profit.py # max profit tests
 │  ├─ test_sma.py        # SMA & returns tests
 │  └─ test_streak.py     # streak detection tests
 ├─ main.py               # Streamlit app entry point
