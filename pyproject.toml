@@ -1,0 +1,22 @@
+[project]
+name = "stock-analysis-tool"
+version = "0.1.0"
+description = "Stock visualisation & analytics (streaks, SMA, max-profit)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pandas",
+  "numpy",
+  "plotly",
+  "streamlit",
+  "yfinance",
+  "pytest"
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["."]
